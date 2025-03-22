@@ -1,3 +1,4 @@
 arxiv
 requests
 PyPDF2
+nltk
