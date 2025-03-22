@@ -4,10 +4,14 @@ import json
 import requests
 from io import BytesIO
 import PyPDF2
+from PyPDF2 import PdfReader
+import re
 
 def get_pdf_text(pdf_url):
     """
-    Downloads the PDF from pdf_url and extracts its text content.
+    Downloads the PDF from pdf_url, extracts its text using PyPDF2, 
+    and performs basic cleanup on the extracted text.
+    
     Returns an empty string if extraction fails.
     """
     try:
@@ -15,13 +19,22 @@ def get_pdf_text(pdf_url):
         if response.status_code == 200:
             with BytesIO(response.content) as f:
                 try:
-                    pdf_reader = PyPDF2.PdfReader(f)
+                    pdf_reader = PdfReader(f)
                     text = ""
                     for page in pdf_reader.pages:
                         page_text = page.extract_text()
                         if page_text:
-                            text += page_text
-                    return text
+                            text += page_text + "\n"
+                    
+                    # Basic post-processing cleanup:
+                    # 1. Replace common ligatures
+                    text = text.replace("ﬁ", "fi").replace("ﬂ", "fl")
+                    
+                    # 2. Remove excessive newlines and whitespace
+                    text = re.sub(r'\n\s*\n', '\n\n', text)
+                    text = re.sub(r'\s+', ' ', text)
+                    
+                    return text.strip()
                 except Exception as e:
                     print(f"Error extracting text from PDF: {e}")
                     return ""
@@ -99,3 +112,6 @@ def save_data(data, filename):
     with open(filename, "w") as f:
         json.dump(data, f, indent=2)
     print(f"Data saved to {filename}")
+
+
+
